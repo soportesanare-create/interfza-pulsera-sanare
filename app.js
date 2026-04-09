@@ -38,6 +38,7 @@ let gattServer = null;
 let isConnected = false;
 let currentPatient = null; 
 let currentMeasurements = { hr: 0, spo2: 0, pulse: 0, bpSys: 0, bpDia: 0 }; 
+let simulationInterval = null;
 
 let chartData = { labels: [], hr: [], spo2: [] };
 const MAX_DATA_POINTS = 20;
