@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor Clínico | Health Dashboard PRO</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Modal de Registro de Paciente -->
+  <div class="modal-overlay" id="patient-modal">
+    <div class="modal-content">
+      <h2>Registro de Nueva Medición</h2>
+      <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem; text-align: center;">
+        Inicia la sesión vinculando los datos vitales a un paciente.
+      </p>
+      
+      <form id="patient-form">
+        <div class="form-group">
+          <label for="p-name">Nombre del Paciente</label>
+          <input type="text" id="p-name" placeholder="Ej. Juan Pérez" required>
+        </div>
+        <div class="form-group">
+          <label for="p-age">Edad</label>
+          <input type="number" id="p-age" placeholder="Ej. 45" required>
+        </div>
+        <div class="form-group">
+          <label for="p-id">Folio / Expediente (Opcional)</label>
+          <input type="text" id="p-id" placeholder="Ej. EXP-202394">
+        </div>
+        
+        <button type="submit" class="btn-primary">Vincular y Comenzar Monitoreo</button>
+      </form>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand-section">
+      <div class="logo">✦</div>
+      <div class="title-group">
+        <h1>Health Dashboard PRO</h1>
+        <p>Monitoreo Clínico Continuo</p>
+      </div>
+    </div>
+    
+    <div class="device-status">
+      <div class="device-info">
+        <strong>Wearable Mesh</strong>
+        <span id="device-connection-state">Desconectado</span>
+      </div>
+      <div class="status-indicator" id="status-indicator"></div>
+      <button class="connect-btn" id="btn-connect">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 7l10 10M17 7L7 17"/>
+        </svg>
+        Vincular Bluetooth
+      </button>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    
+    <aside class="sidebar">
+      <!-- Tarjeta del Paciente (Oculta hasta registrar) -->
+      <div class="patient-card" id="patient-info-card">
+        <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem;">Paciente en Monitoreo</h3>
+        <div class="patient-header">
+          <div class="patient-avatar" id="avatar-initial">J</div>
+          <div>
+            <h4 id="display-p-name" style="font-weight: 600; color: var(--text-primary);">Juan Pérez</h4>
+            <p id="display-p-details" style="font-size: 0.875rem; color: var(--text-secondary);">45 años | EXP-123</p>
+          </div>
+        </div>
+        <button class="btn-save-record" id="btn-save-database">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          Guardar Medición Actual
+        </button>
+      </div>
+
+      <div class="device-overview-card">
+        <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary);">Dispositivo Vinculado</h3>
+        
+        <div class="watch-graphic">
+          <div class="watch-screen-text">Native information</div>
+          <div class="watch-screen-value heartbeat" id="watch-screen-value">--</div>
+        </div>
+
+        <div class="device-details-list">
+          <div class="device-detail-item">
+            <span class="detail-label">Device Name:</span>
+            <span class="detail-value">KY11</span>
+          </div>
+          <div class="device-detail-item">
+            <span class="detail-label">MAC Address:</span>
+            <span class="detail-value text-muted" style="letter-spacing: 0.5px;">E4:CE:66:53:57:95</span>
+          </div>
+          <div class="device-detail-item">
+            <span class="detail-label">Hardware Ver:</span>
+            <span class="detail-value">5.27</span>
+          </div>
+          <div class="device-detail-item">
+            <span class="detail-label">Última Sinc:</span>
+            <span class="detail-value" id="val-lastsync">--:--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="alerts-panel">
+        <h3 class="section-title" style="font-size: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          Log de Alertas 
+          <span style="font-size: 0.75rem; font-weight: normal; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">En vivo</span>
+        </h3>
+        <div class="alerts-list" id="alerts-list"></div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Controles de Medición Activa -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-light); margin-bottom: 0.5rem;">
+        <div>
+          <h2 style="font-size: 1.125rem; font-weight: 600;">Panel de Telemetría Continua</h2>
+          <p style="font-size: 0.875rem; color: var(--text-secondary);">Métricas capturadas en tiempo real sin interrupción</p>
+        </div>
+        <button id="btn-trigger-scan" style="background-color: var(--accent-blue); color: white; border: none; padding: 0.6rem 1.25rem; border-radius: var(--radius-full); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px rgba(14, 165, 233, 0.2); transition: all 0.2s;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          Iniciar Monitoreo Continuo
+        </button>
+      </div>
+
+      <div class="vitals-grid">
+        
+        <!-- Tarjeta SpO2 -->
+        <div class="vital-card">
+          <div class="card-header">
+            <span class="card-title">Oxigenación (SpO₂)</span>
+            <div class="icon-box icon-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+          </div>
+          <div class="card-value-container">
+            <div class="card-value" id="val-spo2">--</div>
+            <div class="card-unit">%</div>
+          </div>
+          <div class="card-status">
+            <span class="badge badge-normal">Normal</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta FC -->
+        <div class="vital-card">
+          <div class="card-header">
+            <span class="card-title">Ritmo Cardíaco</span>
+            <div class="icon-box icon-red heartbeat">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            </div>
+          </div>
+          <div class="card-value-container" style="color: var(--accent-red);">
+            <div class="card-value" id="val-hr">--</div>
+            <div class="card-unit">BPM</div>
+          </div>
+          <div class="card-status">
+            <span class="badge badge-warning">En vivo</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta Presión Arterial (Blood) -->
+        <div class="vital-card">
+          <div class="card-header">
+            <span class="card-title">Presión Arterial</span>
+            <div class="icon-box icon-orange">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+            </div>
+          </div>
+          <div class="card-value-container">
+            <div class="card-value" id="val-bp" style="font-size: 2.1rem;">--/--</div>
+            <div class="card-unit">mmHg</div>
+          </div>
+          <div class="card-status">
+            <span class="badge badge-normal">Estimado PPG</span>
+          </div>
+        </div>
+
+        <!-- Tarjeta Pulso -->
+        <div class="vital-card">
+          <div class="card-header">
+            <span class="card-title">Pulso Sensorial</span>
+            <div class="icon-box icon-purple">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+          </div>
+          <div class="card-value-container">
+            <div class="card-value" id="val-pulse">--</div>
+            <div class="card-unit">PR</div>
+          </div>
+          <div class="card-status">
+            <span class="badge" style="background:var(--bg-main)">Estable</span>
+          </div>
+        </div>
+
+      </div> <!-- /vitals-grid -->
+
+      <!-- Sección de Gráficas Múltiples -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+        
+        <div class="charts-section" style="padding: 1rem;">
+          <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-secondary);">Tendencia Frecuencia Cardíaca</h3>
+          <div style="height: 150px; width: 100%;">
+            <canvas id="chartHr"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-section" style="padding: 1rem;">
+          <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-secondary);">Dinamia SpO₂ (Oxigenación)</h3>
+          <div style="height: 150px; width: 100%;">
+            <canvas id="chartSpo2"></canvas>
+          </div>
+        </div>
+
+        <div class="charts-section" style="padding: 1rem; position: relative;">
+          <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-secondary);">Presión Arterial (SYS/DIA)</h3>
+          <div style="height: 150px; width: 100%;">
+            <canvas id="chartBp"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tabla de Historial (Log) -->
+      <div class="charts-section" style="margin-top: 1rem; padding: 1.5rem;">
+        <h2 class="section-title" style="margin-bottom: 1rem; font-size: 1rem;">Historial Clínico de la Sesión</h2>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-secondary);">
+                <th style="padding: 12px 8px;">Hora</th>
+                <th style="padding: 12px 8px;">Paciente</th>
+                <th style="padding: 12px 8px;">FC (bpm)</th>
+                <th style="padding: 12px 8px;">SpO₂ (%)</th>
+                <th style="padding: 12px 8px;">Presión (mmHg)</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body">
+              <!-- Registros guardados aparecerán aquí -->
+            </tbody>
+          </table>
+          <p id="empty-history-msg" style="text-align: center; color: var(--text-tertiary); padding: 1rem; font-size: 0.875rem;">Aún no has guardado mediciones.</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>
