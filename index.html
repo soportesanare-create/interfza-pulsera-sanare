@@ -170,20 +170,46 @@
           </div>
         </div>
 
-        <!-- Tarjeta Presión Arterial (Blood) -->
-        <div class="vital-card">
+        <!-- Tarjeta Presión Arterial — Edición Manual -->
+        <div class="vital-card" id="bp-card">
           <div class="card-header">
             <span class="card-title">Presión Arterial</span>
-            <div class="icon-box icon-orange">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <button id="btn-edit-bp" class="btn-bp-edit" title="Ingresar presión manualmente">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Ingresar
+              </button>
+              <div class="icon-box icon-orange">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+              </div>
             </div>
           </div>
-          <div class="card-value-container">
+
+          <!-- Valor mostrado -->
+          <div class="card-value-container" id="bp-display">
             <div class="card-value" id="val-bp" style="font-size: 2.1rem;">--/--</div>
             <div class="card-unit">mmHg</div>
           </div>
+
+          <!-- Formulario inline de edición (oculto por defecto) -->
+          <div class="bp-edit-form" id="bp-edit-form">
+            <div class="bp-inputs-row">
+              <div class="bp-field">
+                <label for="inp-bp-sys">SIS</label>
+                <input type="number" id="inp-bp-sys" min="60" max="250" placeholder="120">
+              </div>
+              <div class="bp-slash">/</div>
+              <div class="bp-field">
+                <label for="inp-bp-dia">DIA</label>
+                <input type="number" id="inp-bp-dia" min="40" max="150" placeholder="80">
+              </div>
+            </div>
+            <button id="btn-save-bp" class="btn-bp-save">✓ Registrar</button>
+          </div>
+
           <div class="card-status">
-            <span class="badge badge-normal">Estimado PPG</span>
+            <span class="badge" id="bp-badge" style="background:#f1f5f9; color:var(--text-secondary);">Sin registro</span>
+            <span id="bp-classification" style="font-size:0.7rem; color:var(--text-secondary);"></span>
           </div>
         </div>
 
