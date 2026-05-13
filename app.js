@@ -45,6 +45,22 @@ let chartData = { labels: [], hr: [], spo2: [] };
 const MAX_DATA_POINTS = 20;
 let myChart = null;
 
+// ============================================
+// CONFIGURACIÓN FIREBASE (ACTUALIZADA)
+// ============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCru7dXkG1XmUAHEXzUeeygdN1je4vOUMA",
+  authDomain: "metricas-pulsera.firebaseapp.com",
+  projectId: "metricas-pulsera",
+  storageBucket: "metricas-pulsera.firebasestorage.app",
+  messagingSenderId: "1075067181635",
+  appId: "1:1075067181635:android:72b9649281249d020792f6"
+};
+
+// Inicializar Firebase (Compat Mode)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
   initChart();
@@ -77,6 +93,29 @@ document.addEventListener('DOMContentLoaded', () => {
     displayPName.innerText = currentPatient.name;
     displayPDetails.innerText = `${currentPatient.age} años | ${currentPatient.id}`;
     avatarInitial.innerText = currentPatient.name.charAt(0).toUpperCase();
+
+    // Guardar/Actualizar en Firestore con confirmación
+    db.collection('patients').doc(currentPatient.id).set({
+      name: currentPatient.name,
+      age: currentPatient.age,
+      id: currentPatient.id,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      metrics: {
+        hr: 0,
+        spo2: 0,
+        bpSys: 0,
+        bpDia: 0
+      }
+    }).then(() => {
+      console.log("Paciente guardado en Firestore con éxito.");
+      addAlert('success', `☁️ Sincronizado con la nube.`);
+    }).catch(err => {
+      console.error("Error al guardar en Firestore:", err);
+      addAlert('critical', `❌ Error de sincronización: ${err.message}`);
+    });
+
+    // Sincronizar localmente (para otras pestañas en la misma PC)
+    localStorage.setItem('sanare_current_patient', JSON.stringify(currentPatient));
 
     // Mostrar Tarjeta, Esconder Modal
     patientInfoCard.classList.add('active');
@@ -143,6 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Actualizar tarjeta principal
     document.getElementById('val-bp').innerText = `${sys}/${dia}`;
+
+    // Stream a Firestore
+    if (currentPatient) {
+      db.collection('patients').doc(currentPatient.id).update({
+        'metrics.bpSys': sys,
+        'metrics.bpDia': dia,
+        'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
 
     // Clasificación ACC/AHA 2017
     const { label, cls, icon } = classifyBP(sys, dia);
@@ -255,6 +303,18 @@ function simulateWearFitResponse() {
   document.getElementById('watch-screen-value').innerText = currentMeasurements.hr;
   document.getElementById('val-lastsync').innerText = new Date().toLocaleTimeString();
 
+  // Stream a Firestore (Simulación)
+  if (currentPatient) {
+    db.collection('patients').doc(currentPatient.id).update({
+      'metrics.hr': currentMeasurements.hr,
+      'metrics.pulse': currentMeasurements.pulse,
+      'metrics.spo2': currentMeasurements.spo2,
+      'metrics.bpSys': currentMeasurements.bpSys,
+      'metrics.bpDia': currentMeasurements.bpDia,
+      'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
   updateCharts(currentMeasurements, new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}));
 }
 
@@ -364,6 +424,16 @@ function handleHeartRateData(event) {
   document.getElementById('val-spo2').innerText   = currentMeasurements.spo2;
   document.getElementById('val-bp').innerText     = `${currentMeasurements.bpSys}/${currentMeasurements.bpDia}`;
   document.getElementById('val-lastsync').innerText = new Date().toLocaleTimeString();
+
+  // Stream a Firestore
+  if (currentPatient) {
+    db.collection('patients').doc(currentPatient.id).update({
+      'metrics.hr': hrBpm,
+      'metrics.pulse': hrBpm,
+      'metrics.spo2': currentMeasurements.spo2,
+      'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
 
   updateCharts(currentMeasurements, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 }
