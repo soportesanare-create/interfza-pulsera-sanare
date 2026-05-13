@@ -57,9 +57,13 @@ const firebaseConfig = {
   appId: "1:1075067181635:android:72b9649281249d020792f6"
 };
 
-// Inicializar Firebase (Compat Mode)
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// Inicializar Firebase (Compat Mode) con seguridad
+if (typeof firebase !== 'undefined') {
+  firebase.initializeApp(firebaseConfig);
+} else {
+  console.error("Firebase SDK no se cargó correctamente. Revisa la conexión a internet o el orden de los scripts.");
+}
+const db = (typeof firebase !== 'undefined') ? firebase.firestore() : null;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
