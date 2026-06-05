@@ -38,8 +38,9 @@ let gattServer = null;
 let hrCharacteristic = null;  // <-- Characteristic real del Polar
 let isConnected = false;
 let currentPatient = null; 
-let currentMeasurements = { hr: 0, spo2: 0, pulse: 0, bpSys: 0, bpDia: 0 }; 
+let currentMeasurements = { hr: 0, spo2: 0, pulse: 0, bpSys: 0, bpDia: 0, temp: 0 }; 
 let simulationInterval = null;
+let sessionHistory = [];
 
 let chartData = { labels: [], hr: [], spo2: [] };
 const MAX_DATA_POINTS = 20;
@@ -216,6 +217,87 @@ document.addEventListener('DOMContentLoaded', () => {
     btnEditBp.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Ingresar`;
   });
 
+  // ── SpO2 — Edición Manual ────────────────────────────
+  const btnEditSpo2  = document.getElementById('btn-edit-spo2');
+  const spo2EditForm = document.getElementById('spo2-edit-form');
+  const btnSaveSpo2  = document.getElementById('btn-save-spo2');
+  const spo2Badge    = document.getElementById('spo2-badge');
+
+  if (btnEditSpo2) {
+    btnEditSpo2.addEventListener('click', () => {
+      const isOpen = spo2EditForm.classList.toggle('active');
+      btnEditSpo2.innerHTML = isOpen
+        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar`
+        : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Ingresar`;
+      if (isOpen) document.getElementById('inp-spo2').focus();
+    });
+
+    btnSaveSpo2.addEventListener('click', () => {
+      const spo2Val = parseInt(document.getElementById('inp-spo2').value, 10);
+      if (!spo2Val) return;
+      currentMeasurements.spo2 = spo2Val;
+      document.getElementById('val-spo2').innerText = spo2Val;
+      
+      if (currentPatient) {
+        db.collection('patients').doc(currentPatient.id).update({
+          'metrics.spo2': spo2Val,
+          'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      spo2Badge.innerText = spo2Val >= 95 ? 'Normal' : 'Baja';
+      spo2Badge.className = spo2Val >= 95 ? 'badge badge-normal' : 'badge badge-warning';
+      addAlert(spo2Val >= 95 ? 'info' : 'warning', `SpO2 manual registrada: ${spo2Val}%`);
+      
+      updateCharts(currentMeasurements, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      
+      spo2EditForm.classList.remove('active');
+      btnEditSpo2.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Ingresar`;
+    });
+  }
+
+  // ── Temperatura — Edición Manual ────────────────────────────
+  const btnEditTemp  = document.getElementById('btn-edit-temp');
+  const tempEditForm = document.getElementById('temp-edit-form');
+  const btnSaveTemp  = document.getElementById('btn-save-temp');
+  const tempBadge    = document.getElementById('temp-badge');
+
+  if (btnEditTemp) {
+    btnEditTemp.addEventListener('click', () => {
+      const isOpen = tempEditForm.classList.toggle('active');
+      btnEditTemp.innerHTML = isOpen
+        ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancelar`
+        : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Ingresar`;
+      if (isOpen) document.getElementById('inp-temp').focus();
+    });
+
+    btnSaveTemp.addEventListener('click', () => {
+      const tempVal = parseFloat(document.getElementById('inp-temp').value);
+      if (!tempVal) return;
+      currentMeasurements.temp = tempVal;
+      document.getElementById('val-temp').innerText = tempVal;
+      
+      if (currentPatient) {
+        db.collection('patients').doc(currentPatient.id).update({
+          'metrics.temp': tempVal,
+          'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+        });
+      }
+
+      let label = 'Normal';
+      let cls = 'badge-bp-optimal';
+      if (tempVal > 37.5) { label = 'Fiebre'; cls = 'badge-bp-high1'; }
+      else if (tempVal < 35.0) { label = 'Hipotermia'; cls = 'badge-bp-elevated'; }
+      
+      tempBadge.innerText = label;
+      tempBadge.className = `badge ${cls}`;
+      addAlert(tempVal > 37.5 || tempVal < 35.0 ? 'warning' : 'info', `Temp manual registrada: ${tempVal}°C`);
+      
+      tempEditForm.classList.remove('active');
+      btnEditTemp.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Ingresar`;
+    });
+  }
+
   // Lógica de "Monitoreo Continuo"
   // Con el Polar Verity Sense los datos llegan vía notificaciones BLE automáticamente.
   // Este botón solo muestra/oculta el estado activo en la UI.
@@ -256,6 +338,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Insertar en tabla HTML directamente
     const timeStr = new Date().toLocaleTimeString();
+    
+    // Guardar en array de historial
+    sessionHistory.push({
+      time: timeStr,
+      hr: currentMeasurements.hr,
+      spo2: currentMeasurements.spo2,
+      bpSys: currentMeasurements.bpSys,
+      bpDia: currentMeasurements.bpDia,
+      temp: currentMeasurements.temp || '--'
+    });
+
     const tableBody = document.getElementById('history-table-body');
     const emptyMsg = document.getElementById('empty-history-msg');
     
@@ -269,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td style="padding: 12px 8px; color: var(--accent-red);">${currentMeasurements.hr}</td>
       <td style="padding: 12px 8px; color: var(--accent-blue);">${currentMeasurements.spo2}%</td>
       <td style="padding: 12px 8px; color: var(--accent-orange);">${currentMeasurements.bpSys}/${currentMeasurements.bpDia}</td>
+      <td style="padding: 12px 8px; color: #f59e0b;">${currentMeasurements.temp || '--'}</td>
     `;
     tableBody.prepend(row);
 
@@ -286,6 +380,68 @@ document.addEventListener('DOMContentLoaded', () => {
       btnSaveRecord.style.color = "";
     }, 2000);
   });
+
+  // WhatsApp Share Logic
+  const btnShareWhatsapp = document.getElementById('btn-share-whatsapp');
+  if (btnShareWhatsapp) {
+    btnShareWhatsapp.addEventListener('click', () => {
+      if (!currentPatient) {
+        alert("Aún no hay paciente registrado.");
+        return;
+      }
+      if (sessionHistory.length === 0) {
+        alert("No hay registros guardados en el historial de esta sesión.");
+        return;
+      }
+      const pName = currentPatient.name || '--';
+      const pDetails = `${currentPatient.age} años | ${currentPatient.id}`;
+      
+      let historyText = "";
+      sessionHistory.forEach(r => {
+        historyText += `[${r.time}] FC:${r.hr} | SpO2:${r.spo2}% | PA:${r.bpSys}/${r.bpDia} | T:${r.temp}°C\n`;
+      });
+
+      const message = `*Health Dashboard PRO - Historial de Sesión*\n` +
+                      `Paciente: ${pName}\n` +
+                      `Detalles: ${pDetails}\n\n` +
+                      `*Registros capturados:*\n` +
+                      historyText + `\n` +
+                      `Generado el: ${new Date().toLocaleString()}`;
+
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+      addAlert('success', 'Historial enviado por WhatsApp');
+    });
+  }
+
+  // Descargar CSV Logic
+  const btnDownloadCsv = document.getElementById('btn-download-csv');
+  if (btnDownloadCsv) {
+    btnDownloadCsv.addEventListener('click', () => {
+      if (!currentPatient) {
+        alert("Aún no hay paciente registrado.");
+        return;
+      }
+      if (sessionHistory.length === 0) {
+        alert("No hay registros en el historial para descargar.");
+        return;
+      }
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Hora,Paciente,FC (bpm),SpO2 (%),Presion Sistolica (mmHg),Presion Diastolica (mmHg),Temp (C)\n";
+      sessionHistory.forEach(r => {
+        csvContent += `${r.time},${currentPatient.name},${r.hr},${r.spo2},${r.bpSys},${r.bpDia},${r.temp}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Historial_Sanare_${currentPatient.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      addAlert('success', 'Historial descargado en formato CSV');
+    });
+  }
+
 }); // <--- FIn de DOMContentLoaded
 
 
