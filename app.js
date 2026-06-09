@@ -466,6 +466,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Lógica de Formularios de Infusión y Reacciones
+  const btnSaveInfusion = document.getElementById('btn-save-infusion');
+  if (btnSaveInfusion) {
+    btnSaveInfusion.addEventListener('click', () => {
+      if (!currentPatient || !db) {
+        alert('⚠️ Primero registra un paciente (llena el formulario de nombre, edad y expediente). Sin paciente activo no se puede guardar.');
+        return;
+      }
+      
+      const sal = document.getElementById('inf-sal').value.trim();
+      const gramos = document.getElementById('inf-gramos').value.trim();
+      const dilucion = document.getElementById('inf-dilucion').value.trim();
+      const tiempo = document.getElementById('inf-tiempo').value.trim();
+      
+      if (!sal) return alert('Por favor, ingresa el medicamento/sal.');
+
+      const infusionEvent = {
+        type: 'infusion',
+        sal: sal,
+        gramos: gramos,
+        dilucion: dilucion,
+        tiempo: tiempo,
+        timestamp: new Date().toISOString(),
+        timeStr: new Date().toLocaleTimeString()
+      };
+
+      db.collection('patients').doc(currentPatient.id).update({
+        clinicalEvents: firebase.firestore.FieldValue.arrayUnion(infusionEvent)
+      }).then(() => {
+        addAlert('info', '✅ Infusión registrada correctamente.');
+        document.getElementById('inf-sal').value = '';
+        document.getElementById('inf-gramos').value = '';
+        document.getElementById('inf-dilucion').value = '';
+        document.getElementById('inf-tiempo').value = '';
+      }).catch(err => {
+        console.error("Error al guardar infusión:", err);
+        addAlert('critical', 'Error al guardar infusión: ' + err.message);
+      });
+    });
+  }
+
+  const btnSaveEvent = document.getElementById('btn-save-event');
+  if (btnSaveEvent) {
+    btnSaveEvent.addEventListener('click', () => {
+      if (!currentPatient || !db) {
+        alert('⚠️ Primero registra un paciente (llena el formulario de nombre, edad y expediente). Sin paciente activo no se puede guardar.');
+        return;
+      }
+      
+      const esperado = document.getElementById('evt-esperado').value.trim();
+      const adversa = document.getElementById('evt-adversa').value.trim();
+      const farmaco = document.getElementById('evt-farmaco').value.trim();
+
+      if (!esperado && !adversa && !farmaco) return alert('Por favor, ingresa al menos un dato del evento.');
+
+      const adverseEvent = {
+        type: 'adverse_event',
+        esperado: esperado,
+        adversa: adversa,
+        farmaco: farmaco,
+        timestamp: new Date().toISOString(),
+        timeStr: new Date().toLocaleTimeString()
+      };
+
+      db.collection('patients').doc(currentPatient.id).update({
+        clinicalEvents: firebase.firestore.FieldValue.arrayUnion(adverseEvent)
+      }).then(() => {
+        addAlert('warning', '⚠ Evento registrado correctamente.');
+        document.getElementById('evt-esperado').value = '';
+        document.getElementById('evt-adversa').value = '';
+        document.getElementById('evt-farmaco').value = '';
+      }).catch(err => {
+        console.error("Error al guardar evento:", err);
+        addAlert('critical', 'Error al guardar evento: ' + err.message);
+      });
+    });
+  }
+
 }); // <--- FIn de DOMContentLoaded
 
 

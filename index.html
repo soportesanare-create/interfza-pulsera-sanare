@@ -333,6 +333,57 @@
 
       </div> <!-- /vitals-grid -->
 
+      <!-- Sección de Registro de Infusiones y Eventos Clínicos -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        
+        <!-- Formulario de Infusiones -->
+        <div class="charts-section" style="padding: 1.5rem;">
+          <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--accent-blue);">💉 Registro de Infusión (Citotóxicos / Monoclonal)</h3>
+          <div style="margin-top: 0;">
+            <div style="margin-bottom: 0.75rem;">
+              <label for="inf-sal" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Sal / Medicamento</label>
+              <input type="text" id="inf-sal" placeholder="Ej. Rituximab" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-light)'">
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="flex: 1;">
+                <label for="inf-gramos" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Gramos / Dosis</label>
+                <input type="text" id="inf-gramos" placeholder="Ej. 500mg" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-light)'">
+              </div>
+              <div style="flex: 1;">
+                <label for="inf-dilucion" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Dilución</label>
+                <input type="text" id="inf-dilucion" placeholder="Ej. SF 250ml" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-light)'">
+              </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label for="inf-tiempo" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Tiempo de Administración</label>
+              <input type="text" id="inf-tiempo" placeholder="Ej. 90 minutos" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border-light)'">
+            </div>
+            <button id="btn-save-infusion" style="width: 100%; padding: 0.65rem; background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">✓ Registrar Infusión</button>
+          </div>
+        </div>
+
+        <!-- Formulario de Reacciones Adversas -->
+        <div class="charts-section" style="padding: 1.5rem;">
+          <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--accent-red);">⚠️ Reacciones Adversas / Eventos</h3>
+          <div style="margin-top: 0;">
+            <div style="margin-bottom: 0.75rem;">
+              <label for="evt-esperado" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Efecto secundario esperado</label>
+              <input type="text" id="evt-esperado" placeholder="Ej. Náuseas leves" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-red)'" onblur="this.style.borderColor='var(--border-light)'">
+            </div>
+            <div style="margin-bottom: 0.75rem;">
+              <label for="evt-adversa" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Reacción adversa a medicamento</label>
+              <input type="text" id="evt-adversa" placeholder="Ej. Reacción alérgica cutánea" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-red)'" onblur="this.style.borderColor='var(--border-light)'">
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <label for="evt-farmaco" style="display:block; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.35rem;">Fármaco de contención / Traslado Hospital</label>
+              <input type="text" id="evt-farmaco" placeholder="Ej. Hidrocortisona 100mg IV" style="width: 100%; padding: 0.55rem 0.75rem; border: 1.5px solid var(--border-light); border-radius: 8px; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-red)'" onblur="this.style.borderColor='var(--border-light)'">
+            </div>
+            <button id="btn-save-event" style="width: 100%; padding: 0.65rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">⚠ Registrar Evento</button>
+          </div>
+        </div>
+
+      </div>
+
       <!-- Sección de Gráficas Múltiples -->
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
         
