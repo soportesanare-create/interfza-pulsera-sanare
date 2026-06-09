@@ -671,3 +671,63 @@ header {
   0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); }
   50%       { box-shadow: 0 0 0 5px rgba(220,38,38,0); }
 }
+
+/* ── Tarjeta Oxímetro ────────────────────────────────────────────── */
+#card-oximetro {
+  border: 1.5px solid #bae6fd;
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+#card-oximetro:hover {
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12), var(--shadow-md);
+  border-color: var(--accent-blue);
+}
+
+#card-oximetro .watch-graphic {
+  border: 6px solid #bae6fd;
+  background: linear-gradient(135deg, #e0f2fe, #f0f9ff);
+  box-shadow: inset 0 0 16px rgba(14,165,233,0.15);
+}
+
+/* Número SpO2 en el oxímetro — pulso azul suave */
+@keyframes spo2-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.72; }
+}
+#oximeter-screen-value {
+  animation: spo2-pulse 2s ease-in-out infinite;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+/* Indicador de estado azul para el oxímetro */
+#oxi-status-indicator {
+  background-color: var(--text-tertiary);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+#oxi-status-indicator.active {
+  background-color: var(--accent-blue);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.2);
+  animation: pulse-blue 1.5s ease-in-out infinite;
+}
+@keyframes pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(14,165,233,0); }
+}
+
+/* Imagen del oxímetro en la tarjeta */
+#card-oximetro img {
+  width: 100%;
+  max-width: 140px;
+  height: 90px;
+  object-fit: contain;
+  border-radius: 14px;
+  border: 2px solid #bae6fd;
+  background: #f8fafc;
+  padding: 4px;
+  transition: transform 0.25s;
+}
+#card-oximetro img:hover {
+  transform: scale(1.04);
+}

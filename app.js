@@ -13,6 +13,13 @@ const btnTriggerScan = document.getElementById('btn-trigger-scan'); // Botón de
 const statusIndicator = document.getElementById('status-indicator');
 const deviceConnectionStateText = document.getElementById('device-connection-state');
 
+// Oxímetro BT — elementos UI
+const btnConnectOxi      = document.getElementById('btn-connect-oxi');
+const oxiStatusIndicator = document.getElementById('oxi-status-indicator');
+const oxiStateHeader     = document.getElementById('oxi-connection-state-header');
+const oxiStateCard       = document.getElementById('oxi-connection-state');
+const oxiScreenValue     = document.getElementById('oximeter-screen-value');
+
 // Valores de Tarjetas
 const valSpo2 = document.getElementById('val-spo2');
 const valHr = document.getElementById('val-hr');
@@ -32,14 +39,20 @@ const displayPDetails = document.getElementById('display-p-details');
 const avatarInitial = document.getElementById('avatar-initial');
 const btnSaveRecord = document.getElementById('btn-save-database');
 
-// Estado
+// Estado — Pulsera
 let bluetoothDevice = null;
 let gattServer = null;
-let hrCharacteristic = null;  // <-- Characteristic real del Polar
+let hrCharacteristic = null;
 let isConnected = false;
 let currentPatient = null; 
 let currentMeasurements = { hr: 0, spo2: 0, pulse: 0, bpSys: 0, bpDia: 0, temp: 0 }; 
 let simulationInterval = null;
+
+// Estado — Oxímetro
+let oxiDevice = null;
+let oxiGatt   = null;
+let oxiChar   = null;
+let isOxiConnected = false;
 let sessionHistory = [];
 
 let chartData = { labels: [], hr: [], spo2: [] };
@@ -82,6 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
       disconnectDevice();
     }
   });
+
+  // ── Botón Oxímetro BT ────────────────────────────────────────────
+  if (btnConnectOxi) {
+    btnConnectOxi.addEventListener('click', async () => {
+      if (!isOxiConnected) {
+        await connectOximeter();
+      } else {
+        disconnectOximeter();
+      }
+    });
+  }
 
   // Manejar el registro del paciente
   patientForm.addEventListener('submit', async (e) => {
@@ -599,7 +623,6 @@ function handleHeartRateData(event) {
 }
 
 function disconnectDevice() {
-  // Detener notificaciones BLE si estaban activas
   if (hrCharacteristic) {
     hrCharacteristic.removeEventListener('characteristicvaluechanged', handleHeartRateData);
     if (isConnected) hrCharacteristic.stopNotifications().catch(() => {});
@@ -608,11 +631,258 @@ function disconnectDevice() {
   if (bluetoothDevice && bluetoothDevice.gatt.connected) bluetoothDevice.gatt.disconnect();
   isConnected = false;
   if (simulationInterval) { clearInterval(simulationInterval); simulationInterval = null; }
-  btnConnect.innerHTML = 'Vincular Bluetooth';
+  btnConnect.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7L7 17"/></svg> Pulsera`;
   btnConnect.classList.remove('connected');
   statusIndicator.classList.remove('active');
   deviceConnectionStateText.innerText = 'Desconectado';
-  addAlert('warning', 'Conexión BLE cerrada.');
+  addAlert('warning', 'Pulsera BLE desconectada.');
+}
+
+// ============================================================
+// UUIDs BerryMed (ISSC Transparent UART / Nordic-compatible)
+// y otros perfiles genéricos de oxímetros chinos
+// ============================================================
+const OXI_SERVICES = [
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // BerryMed ISSC
+  '0000ffe0-0000-1000-8000-00805f9b34fb', // BerryMed genérico 1
+  '0000ffe1-0000-1000-8000-00805f9b34fb', // BerryMed genérico 2
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
+  '0000ff12-0000-1000-8000-00805f9b34fb', // Genérico
+  '0000fff0-0000-1000-8000-00805f9b34fb', // Genérico
+  0x1822, // PLX Continuous
+  0x1820, // PLX Spot-Check
+  0x180D, // Heart Rate (algunos mandan SpO2 por HR)
+];
+
+async function connectOximeter() {
+  if (!navigator.bluetooth) {
+    alert('❌ Web Bluetooth no soportado. Usa Chrome o Edge.');
+    return;
+  }
+  try {
+    btnConnectOxi.innerHTML = '🔍 Buscando Oxímetro...';
+    addAlert('info', '🫀 Abriendo selector BT (filtrando por Berry)...');
+
+    oxiDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'Berry' }],
+      optionalServices: OXI_SERVICES
+    });
+
+    addAlert('info', `📱 Dispositivo: "${oxiDevice.name || '(sin nombre)'}". Conectando GATT...`);
+    oxiGatt = await oxiDevice.gatt.connect();
+
+    let connected = false;
+
+    // Auto-descubrimiento: intentar todos los servicios conocidos
+    for (let uuid of OXI_SERVICES) {
+      try {
+        const svc = await oxiGatt.getPrimaryService(uuid);
+        const chars = await svc.getCharacteristics();
+        
+        for (let char of chars) {
+          if (char.properties.notify || char.properties.indicate) {
+            await char.startNotifications();
+            char.addEventListener('characteristicvaluechanged', handleRawOximeterData);
+            connected = true;
+            console.log(`[BT] Suscrito a notificaciones en: ${char.uuid}`);
+            addAlert('info', `✅ Escuchando datos en: ${char.uuid.substring(0,8)}...`);
+          }
+        }
+      } catch (err) {
+        // El dispositivo no tiene este servicio específico (normal)
+      }
+    }
+
+    if (!connected) {
+      addAlert('warning',
+        `⚠️ "${oxiDevice.name || 'Dispositivo'}" conectado pero no se encontró un canal de datos abierto.`
+      );
+    } else {
+      addAlert('success', `📡 Conexión establecida. Pon el dedo en el oxímetro.`);
+    }
+
+    // UI
+    isOxiConnected = true;
+    btnConnectOxi.innerHTML = `✅ Oxímetro Conectado`;
+    btnConnectOxi.classList.add('connected');
+    oxiStatusIndicator.classList.add('active');
+    if (oxiStateHeader) oxiStateHeader.innerText = oxiDevice.name || 'BT Oxímetro';
+    if (oxiStateCard)   oxiStateCard.innerText   = connected ? 'Activo' : 'Sin datos';
+
+    oxiDevice.addEventListener('gattserverdisconnected', disconnectOximeter);
+
+  } catch (error) {
+    console.error('[OXI BLE Error]', error);
+    if (error.name === 'NotFoundError') {
+      addAlert('warning', '⚠️ Oxímetro: no se seleccionó dispositivo.');
+    } else {
+      addAlert('warning', `❌ Oxímetro BLE: ${error.message}`);
+    }
+    disconnectOximeter();
+  }
+}
+
+// ============================================================
+// ENRUTADOR DE DATOS: Intenta parsear el paquete según su forma
+// ============================================================
+let oxiPacketCount = 0;
+let oxiBuffer = [];
+
+function handleRawOximeterData(event) {
+  const rawArray = new Uint8Array(event.target.value.buffer);
+  
+  // Imprimir los primeros 3 paquetes en la UI para diagnóstico
+  if (oxiPacketCount < 3) {
+    oxiPacketCount++;
+    addAlert('info', `⚙️ Raw Data: [${Array.from(rawArray).join(', ')}]`);
+  }
+
+  // 1. Detección Protocolo Oxi-Pro 300 / Genérico FF AA
+  // Formato detectado: [255, 170, Seq, Len, SpO2, PR, ...]
+  for (let i = 0; i < rawArray.length - 5; i++) {
+    if (rawArray[i] === 0xFF && rawArray[i+1] === 0xAA) {
+      const spo2 = rawArray[i+4];
+      const pulse = rawArray[i+5];
+      
+      // Validar que los rangos tengan sentido médico
+      if (spo2 > 30 && spo2 <= 100 && pulse > 30 && pulse < 300) {
+        applyOximeterReading(spo2, pulse);
+        return; // Paquete procesado exitosamente
+      }
+    }
+  }
+
+  // 2. Acumular datos en buffer para el protocolo BerryMed clásico de 5 bytes
+  for (let i = 0; i < rawArray.length; i++) {
+    oxiBuffer.push(rawArray[i]);
+  }
+
+  // Buscar paquetes de 5 bytes que empiecen con bit 7 en 1 (>= 128)
+  while (oxiBuffer.length >= 5) {
+    if ((oxiBuffer[0] & 0x80) === 0 || (oxiBuffer[0] === 0xFF && oxiBuffer[1] === 0xAA)) {
+      // Remover ruido o cabeceras FF AA que ya procesamos arriba
+      oxiBuffer.shift();
+      continue;
+    }
+
+    const b0 = oxiBuffer[0];
+    const b1 = oxiBuffer[1];
+    const b2 = oxiBuffer[2];
+    const b3 = oxiBuffer[3];
+    const b4 = oxiBuffer[4];
+
+    oxiBuffer = oxiBuffer.slice(5);
+
+    // Intentar Protocolo BerryMed / Jumper Variante A
+    let spo2 = b2;
+    let pulse = ((b3 & 0x40) << 1) | b4; 
+    
+    // Variante B
+    if (spo2 > 100 || spo2 < 30) {
+      spo2 = b4;
+      pulse = b3 | ((b2 & 0x40) << 1); 
+    }
+
+    if (spo2 > 30 && spo2 <= 100 && pulse > 30 && pulse < 250) {
+      applyOximeterReading(spo2, pulse);
+    }
+  }
+
+  // 3. Estándar PLX Continuous (IEEE SFLOAT)
+  if (rawArray.length >= 4 && (rawArray[0] & 0x80) === 0 && oxiBuffer.length === 0) {
+    const flags = rawArray[0];
+    function sfloat(offset) {
+      const raw = (rawArray[offset+1] << 8) | rawArray[offset]; 
+      const exp = raw >> 12;
+      const mantissa = raw & 0x0FFF;
+      const signedExp = exp >= 8 ? exp - 16 : exp;
+      return mantissa * Math.pow(10, signedExp);
+    }
+    const s_spo2  = (flags & 0x01) ? Math.round(sfloat(1)) : null;
+    const s_pulse = (flags & 0x02) ? Math.round(sfloat(3)) : null;
+
+    if (s_spo2 || s_pulse) {
+      applyOximeterReading(s_spo2, s_pulse);
+    }
+  }
+}
+
+// ============================================================
+// Actualización unificada de UI + Firestore desde el oxímetro
+// ============================================================
+let lastOxiSync = 0;
+
+function applyOximeterReading(spo2, pulse) {
+  const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  if (spo2 !== null && spo2 > 0 && spo2 <= 100) {
+    currentMeasurements.spo2 = spo2;
+
+    // Tarjeta SpO2 principal
+    const valSpo2El = document.getElementById('val-spo2');
+    if (valSpo2El) valSpo2El.innerText = spo2;
+
+    // Pantalla sidebar oxímetro
+    if (oxiScreenValue) oxiScreenValue.innerText = spo2;
+
+    // Badge
+    const badge = document.getElementById('spo2-badge');
+    if (badge) {
+      badge.innerText = spo2 >= 95 ? 'Normal' : spo2 >= 90 ? 'Baja' : 'Crítica';
+      badge.className = spo2 >= 95 ? 'badge badge-normal'
+                      : spo2 >= 90 ? 'badge badge-warning'
+                      : 'badge badge-alert';
+    }
+  }
+
+  if (pulse !== null && pulse > 0 && pulse < 300) {
+    currentMeasurements.pulse = pulse;
+    const valPulseEl = document.getElementById('val-pulse');
+    if (valPulseEl) valPulseEl.innerText = pulse;
+  }
+
+  // LIMITADOR (Throttling): Actualizar Gráficos y Firebase solo 1 vez por segundo
+  // El oxímetro puede enviar hasta 50 paquetes por segundo.
+  const now = Date.now();
+  if (now - lastOxiSync >= 1000) {
+    lastOxiSync = now;
+    
+    document.getElementById('val-lastsync').innerText = timeLabel;
+
+    // Guardar en Firestore
+    if (currentPatient && db) {
+      db.collection('patients').doc(currentPatient.id).update({
+        'metrics.spo2': currentMeasurements.spo2,
+        'metrics.pulse': currentMeasurements.pulse, // Guardamos el pulso del oxi
+        'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(e => console.error("Firebase update err:", e));
+    }
+
+    // Dibujar en los gráficos
+    updateCharts(currentMeasurements, timeLabel);
+  }
+}
+
+// ============================================================
+// Desconexión limpia del oxímetro
+// ============================================================
+function disconnectOximeter() {
+  if (oxiChar) {
+    oxiChar.removeEventListener('characteristicvaluechanged', handleRawOximeterData);
+    if (isOxiConnected) oxiChar.stopNotifications().catch(() => {});
+    oxiChar = null;
+  }
+  if (oxiDevice && oxiDevice.gatt.connected) oxiDevice.gatt.disconnect();
+  isOxiConnected = false;
+  if (btnConnectOxi) {
+    btnConnectOxi.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7L7 17"/></svg> Oxímetro`;
+    btnConnectOxi.classList.remove('connected');
+  }
+  if (oxiStatusIndicator) oxiStatusIndicator.classList.remove('active');
+  if (oxiStateHeader)     oxiStateHeader.innerText = 'Desconectado';
+  if (oxiStateCard)       oxiStateCard.innerText   = 'Pendiente';
+  if (oxiScreenValue)     oxiScreenValue.innerText = '--';
+  addAlert('warning', 'Oxímetro BLE desconectado.');
 }
 
 let lastAlert = "";

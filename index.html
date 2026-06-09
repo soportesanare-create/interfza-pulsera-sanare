@@ -51,18 +51,38 @@
       </div>
     </div>
     
-    <div class="device-status">
-      <div class="device-info">
-        <strong>Wearable Mesh</strong>
-        <span id="device-connection-state">Desconectado</span>
+    <div class="device-status" style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+      <!-- Pulsera -->
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="device-info" style="text-align: right;">
+          <strong>Pulsera Polar</strong>
+          <span id="device-connection-state">Desconectado</span>
+        </div>
+        <div class="status-indicator" id="status-indicator"></div>
+        <button class="connect-btn" id="btn-connect">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7l10 10M17 7L7 17"/>
+          </svg>
+          Pulsera
+        </button>
       </div>
-      <div class="status-indicator" id="status-indicator"></div>
-      <button class="connect-btn" id="btn-connect">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 7l10 10M17 7L7 17"/>
-        </svg>
-        Vincular Bluetooth
-      </button>
+      
+      <div style="width: 1px; height: 32px; background-color: var(--border-light);"></div>
+
+      <!-- Oximetro -->
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="device-info" style="text-align: right;">
+          <strong>Oxímetro BT</strong>
+          <span id="oxi-connection-state-header">Desconectado</span>
+        </div>
+        <div class="status-indicator" id="oxi-status-indicator"></div>
+        <button class="connect-btn" id="btn-connect-oxi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7l10 10M17 7L7 17"/>
+          </svg>
+          Oxímetro
+        </button>
+      </div>
     </div>
   </header>
 
@@ -95,30 +115,47 @@
         </div>
       </div>
 
-      <div class="device-overview-card">
-        <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary);">Dispositivo Vinculado</h3>
+      <div class="device-overview-card" id="card-pulsera">
+        <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary);">Pulsera Vinculada</h3>
         
         <div class="watch-graphic">
-          <div class="watch-screen-text">Native information</div>
+          <div class="watch-screen-text">Heart Rate</div>
           <div class="watch-screen-value heartbeat" id="watch-screen-value">--</div>
         </div>
 
         <div class="device-details-list">
           <div class="device-detail-item">
             <span class="detail-label">Device Name:</span>
-            <span class="detail-value">KY11</span>
+            <span class="detail-value">Polar Verity</span>
           </div>
           <div class="device-detail-item">
             <span class="detail-label">MAC Address:</span>
-            <span class="detail-value text-muted" style="letter-spacing: 0.5px;">E4:CE:66:53:57:95</span>
-          </div>
-          <div class="device-detail-item">
-            <span class="detail-label">Hardware Ver:</span>
-            <span class="detail-value">5.27</span>
+            <span class="detail-value text-muted" style="letter-spacing: 0.5px;">BLE:AUTO</span>
           </div>
           <div class="device-detail-item">
             <span class="detail-label">Última Sinc:</span>
             <span class="detail-value" id="val-lastsync">--:--:--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="device-overview-card" id="card-oximetro" style="margin-top: 1.5rem;">
+        <h3 class="section-title" style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-secondary);">Oxímetro Vinculado</h3>
+        
+
+        <div class="watch-graphic" style="border-color: #0ea5e9; background-color: #f0f9ff; box-shadow: inset 0 0 10px rgba(14, 165, 233, 0.2);">
+          <div class="watch-screen-text" style="color: #0284c7;">SpO2 %</div>
+          <div class="watch-screen-value" id="oximeter-screen-value" style="color: #0284c7;">--</div>
+        </div>
+
+        <div class="device-details-list">
+          <div class="device-detail-item">
+            <span class="detail-label">Modelo:</span>
+            <span class="detail-value">Oxi-Pro 300</span>
+          </div>
+          <div class="device-detail-item">
+            <span class="detail-label">Conexión:</span>
+            <span class="detail-value text-muted" id="oxi-connection-state" style="letter-spacing: 0.5px;">Pendiente</span>
           </div>
         </div>
       </div>
@@ -129,6 +166,7 @@
           <span style="font-size: 0.75rem; font-weight: normal; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">En vivo</span>
         </h3>
         <div class="alerts-list" id="alerts-list"></div>
+      </div>
     </aside>
 
     <main class="main-content">
