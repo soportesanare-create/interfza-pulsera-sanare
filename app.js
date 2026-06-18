@@ -358,6 +358,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Lógica de Alerta Roja
+  const btnTriggerAlert = document.getElementById('btn-trigger-alert');
+  if (btnTriggerAlert) {
+    btnTriggerAlert.addEventListener('click', () => {
+      if (!currentPatient || !db) {
+        alert('⚠️ Primero registra un paciente.');
+        return;
+      }
+      const comentario = prompt("🚨 EMITIR ALERTA DE EMERGENCIA\nPor favor, describe brevemente qué ocurrió:");
+      if (comentario) {
+        const emergencyEvent = {
+          type: 'emergency_alert',
+          comentario: comentario,
+          timestamp: new Date().toISOString(),
+          timeStr: new Date().toLocaleTimeString()
+        };
+
+        db.collection('patients').doc(currentPatient.id).update({
+          clinicalEvents: firebase.firestore.FieldValue.arrayUnion(emergencyEvent)
+        }).then(() => {
+          addAlert('critical', `🚨 ALERTA EMITIDA: ${comentario}`);
+        }).catch(err => {
+          console.error("Error al emitir alerta:", err);
+          alert('Error al emitir alerta: ' + err.message);
+        });
+      }
+    });
+  }
+
   // Guardado de historial local
   btnSaveRecord.addEventListener('click', () => {
     if(currentMeasurements.hr === 0) {
