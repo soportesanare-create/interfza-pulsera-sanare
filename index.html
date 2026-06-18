@@ -25,8 +25,12 @@
       
       <form id="patient-form">
         <div class="form-group">
+          <label for="d-name">Nombre del Médico</label>
+          <input type="text" id="d-name" placeholder="Ej. Dr. Juan Pérez" required>
+        </div>
+        <div class="form-group">
           <label for="p-name">Nombre del Paciente</label>
-          <input type="text" id="p-name" placeholder="Ej. Juan Pérez" required>
+          <input type="text" id="p-name" placeholder="Ej. María López" required>
         </div>
         <div class="form-group">
           <label for="p-age">Edad</label>
@@ -95,6 +99,7 @@
         <div class="patient-header">
           <div class="patient-avatar" id="avatar-initial">J</div>
           <div>
+            <div id="display-d-name" style="font-size: 0.8rem; font-weight: 600; color: #0ea5e9; margin-bottom: 2px;"></div>
             <h4 id="display-p-name" style="font-weight: 600; color: var(--text-primary);">Juan Pérez</h4>
             <p id="display-p-details" style="font-size: 0.875rem; color: var(--text-secondary);">45 años | EXP-123</p>
           </div>

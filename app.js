@@ -35,6 +35,7 @@ const modalOverlay = document.getElementById('patient-modal');
 const patientForm = document.getElementById('patient-form');
 const patientInfoCard = document.getElementById('patient-info-card');
 const displayPName = document.getElementById('display-p-name');
+const displayDName = document.getElementById('display-d-name');
 const displayPDetails = document.getElementById('display-p-details');
 const avatarInitial = document.getElementById('avatar-initial');
 const btnSaveRecord = document.getElementById('btn-save-database');
@@ -113,18 +114,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Extraer datos
     currentPatient = {
+      doctorName: document.getElementById('d-name').value,
       name: document.getElementById('p-name').value,
       age: document.getElementById('p-age').value,
       id: document.getElementById('p-id').value || 'Sin Expediente'
     };
 
     // Actualizar UI del Paciente
+    displayDName.innerText = currentPatient.doctorName;
     displayPName.innerText = currentPatient.name;
     displayPDetails.innerText = `${currentPatient.age} años | ${currentPatient.id}`;
     avatarInitial.innerText = currentPatient.name.charAt(0).toUpperCase();
 
     // Guardar/Actualizar en Firestore con confirmación
     db.collection('patients').doc(currentPatient.id).set({
+      doctorName: currentPatient.doctorName,
       name: currentPatient.name,
       age: currentPatient.age,
       id: currentPatient.id,
