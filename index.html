@@ -37,8 +37,8 @@
           <input type="number" id="p-age" placeholder="Ej. 45" required>
         </div>
         <div class="form-group">
-          <label for="p-id">Folio / Expediente (Opcional)</label>
-          <input type="text" id="p-id" placeholder="Ej. EXP-202394">
+          <label for="p-id">Clave de Vinculación (Obligatorio)</label>
+          <input type="text" id="p-id" placeholder="Ej. CDMX-01" required>
         </div>
         
         <button type="submit" class="btn-primary">Vincular y Comenzar Monitoreo</button>
@@ -102,6 +102,10 @@
             <div id="display-d-name" style="font-size: 0.8rem; font-weight: 600; color: #0ea5e9; margin-bottom: 2px;"></div>
             <h4 id="display-p-name" style="font-weight: 600; color: var(--text-primary);">Juan Pérez</h4>
             <p id="display-p-details" style="font-size: 0.875rem; color: var(--text-secondary);">45 años | EXP-123</p>
+            <div style="margin-top: 5px; padding: 4px 8px; background: #fef2f2; border: 1px dashed #ef4444; border-radius: 4px; display: inline-block;">
+              <span style="font-size: 0.75rem; color: #dc2626; font-weight: bold;">PIN DE ACCESO MÓVIL:</span>
+              <strong id="display-p-pin" style="color: #b91c1c; font-size: 1.1rem; letter-spacing: 2px; margin-left: 5px;">----</strong>
+            </div>
           </div>
         </div>
         <button class="btn-save-record" id="btn-save-database">

@@ -64,12 +64,12 @@ let myChart = null;
 // CONFIGURACIÓN FIREBASE (ACTUALIZADA)
 // ============================================
 const firebaseConfig = {
-  apiKey: "AIzaSyCru7dXkG1XmUAHEXzUeeygdN1je4vOUMA",
-  authDomain: "metricas-pulsera.firebaseapp.com",
-  projectId: "metricas-pulsera",
-  storageBucket: "metricas-pulsera.firebasestorage.app",
-  messagingSenderId: "1075067181635",
-  appId: "1:1075067181635:android:72b9649281249d020792f6"
+  apiKey: "AIzaSyCgDVwcleLUkFro-2yRTy2clO6yELNAdeY",
+  authDomain: "pulsera-8d57c.firebaseapp.com",
+  projectId: "pulsera-8d57c",
+  storageBucket: "pulsera-8d57c.firebasestorage.app",
+  messagingSenderId: "151967913471",
+  appId: "1:151967913471:web:b894df1d2595f740b3c3ca"
 };
 
 // Inicializar Firebase (Compat Mode) con seguridad
@@ -112,12 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
   patientForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const pinAcceso = Math.floor(1000 + Math.random() * 9000).toString();
+
     // Extraer datos
     currentPatient = {
       doctorName: document.getElementById('d-name').value,
       name: document.getElementById('p-name').value,
       age: document.getElementById('p-age').value,
-      id: document.getElementById('p-id').value || 'Sin Expediente'
+      id: document.getElementById('p-id').value.trim().toUpperCase() || 'SIN-CLAVE',
+      pin: pinAcceso
     };
 
     // Actualizar UI del Paciente
@@ -125,13 +128,18 @@ document.addEventListener('DOMContentLoaded', () => {
     displayPName.innerText = currentPatient.name;
     displayPDetails.innerText = `${currentPatient.age} años | ${currentPatient.id}`;
     avatarInitial.innerText = currentPatient.name.charAt(0).toUpperCase();
+    
+    // Mostrar PIN en la interfaz
+    const pinDisplay = document.getElementById('display-p-pin');
+    if (pinDisplay) pinDisplay.innerText = pinAcceso;
 
     // Guardar/Actualizar en Firestore con confirmación
-    db.collection('patients').doc(currentPatient.id).set({
+    db.collection('patients').doc(currentPatient.pin).set({
       doctorName: currentPatient.doctorName,
       name: currentPatient.name,
       age: currentPatient.age,
       id: currentPatient.id,
+      pin: currentPatient.pin,
       timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       metrics: {
         hr: 0,
@@ -218,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Stream a Firestore
     if (currentPatient) {
-      db.collection('patients').doc(currentPatient.id).update({
+      db.collection('patients').doc(currentPatient.pin).update({
         'metrics.bpSys': sys,
         'metrics.bpDia': dia,
         'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
@@ -267,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('val-spo2').innerText = spo2Val;
       
       if (currentPatient) {
-        db.collection('patients').doc(currentPatient.id).update({
+        db.collection('patients').doc(currentPatient.pin).update({
           'metrics.spo2': spo2Val,
           'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -306,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('val-temp').innerText = tempVal;
       
       if (currentPatient) {
-        db.collection('patients').doc(currentPatient.id).update({
+        db.collection('patients').doc(currentPatient.pin).update({
           'metrics.temp': tempVal,
           'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
         });
@@ -375,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
           timeStr: new Date().toLocaleTimeString()
         };
 
-        db.collection('patients').doc(currentPatient.id).update({
+        db.collection('patients').doc(currentPatient.pin).update({
           clinicalEvents: firebase.firestore.FieldValue.arrayUnion(emergencyEvent)
         }).then(() => {
           addAlert('critical', `🚨 ALERTA EMITIDA: ${comentario}`);
@@ -525,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timeStr: new Date().toLocaleTimeString()
       };
 
-      db.collection('patients').doc(currentPatient.id).update({
+      db.collection('patients').doc(currentPatient.pin).update({
         clinicalEvents: firebase.firestore.FieldValue.arrayUnion(infusionEvent)
       }).then(() => {
         addAlert('info', '✅ Infusión registrada correctamente.');
@@ -563,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timeStr: new Date().toLocaleTimeString()
       };
 
-      db.collection('patients').doc(currentPatient.id).update({
+      db.collection('patients').doc(currentPatient.pin).update({
         clinicalEvents: firebase.firestore.FieldValue.arrayUnion(adverseEvent)
       }).then(() => {
         addAlert('warning', '⚠ Evento registrado correctamente.');
@@ -600,7 +608,7 @@ function simulateWearFitResponse() {
 
   // Stream a Firestore (Simulación)
   if (currentPatient) {
-    db.collection('patients').doc(currentPatient.id).update({
+    db.collection('patients').doc(currentPatient.pin).update({
       'metrics.hr': currentMeasurements.hr,
       'metrics.pulse': currentMeasurements.pulse,
       'metrics.spo2': currentMeasurements.spo2,
@@ -722,7 +730,7 @@ function handleHeartRateData(event) {
 
   // Stream a Firestore
   if (currentPatient) {
-    db.collection('patients').doc(currentPatient.id).update({
+    db.collection('patients').doc(currentPatient.pin).update({
       'metrics.hr': hrBpm,
       'metrics.pulse': hrBpm,
       'metrics.spo2': currentMeasurements.spo2,
@@ -962,7 +970,7 @@ function applyOximeterReading(spo2, pulse) {
 
     // Guardar en Firestore
     if (currentPatient && db) {
-      db.collection('patients').doc(currentPatient.id).update({
+      db.collection('patients').doc(currentPatient.pin).update({
         'metrics.spo2': currentMeasurements.spo2,
         'metrics.pulse': currentMeasurements.pulse, // Guardamos el pulso del oxi
         'metrics.lastUpdate': firebase.firestore.FieldValue.serverTimestamp()
