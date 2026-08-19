@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pinDisplay) pinDisplay.innerText = pinAcceso;
 
     // Guardar/Actualizar en Firestore con confirmación
+    // merge:true → actualiza solo los campos indicados, NO borra clinicalEvents existentes
     db.collection('patients').doc(currentPatient.pin).set({
       doctorName: currentPatient.doctorName,
       name: currentPatient.name,
@@ -147,10 +148,20 @@ document.addEventListener('DOMContentLoaded', () => {
         bpSys: 0,
         bpDia: 0
       }
-    }).then(() => {
-      console.log("Paciente guardado en Firestore con éxito.");
-      addAlert('success', `☁️ Sincronizado con la nube.`);
-    }).catch(err => {
+    }, { merge: true })
+    .then(() => {
+      // Inicializar clinicalEvents solo si el documento es nuevo (no lo tiene aún)
+      // Usamos set con merge para agregar el campo sin sobrescribir nada
+      return db.collection('patients').doc(currentPatient.pin).set(
+        { clinicalEvents: [] },
+        { merge: true }
+      );
+    })
+    .then(() => {
+      console.log("Paciente guardado en Firestore con éxito. PIN:", currentPatient.pin);
+      addAlert('success', `☁️ Sincronizado con la nube. PIN: ${currentPatient.pin}`);
+    })
+    .catch(err => {
       console.error("Error al guardar en Firestore:", err);
       addAlert('critical', `❌ Error de sincronización: ${err.message}`);
     });
